@@ -1,11 +1,16 @@
 'use client'
 
 import { db } from "@/firebase";
+import { adminDb } from "@/firebaseAdmin";
+import { askQuestion } from "@/lib/askQuestion";
 import { PaperAirplaneIcon } from "@heroicons/react/24/solid";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { useSession } from "next-auth/react";
 import { FormEvent, useState } from "react";
 import { toast } from "react-hot-toast";
+import admin from 'firebase-admin';
+import ChatGPT from '@/assets/chatGPT.png'
+import query from "@/lib/queryApi";
 
 type Props = {
     chatId: string;
@@ -42,19 +47,51 @@ function ChatInput({ chatId }: Props) {
 
     const notification = toast.loading('ChatGPT is thinking...')
 
-    await fetch('/api/askQuestion', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            prompt: input, chatId, model, session
-        })
-    }).then(() => {
+    // await fetch('/api/askQuestion', {
+    //     method: 'POST',
+    //     headers: {
+    //         'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify({
+    //         prompt: input, chatId, model, session
+    //     })
+    // }).then(() => {
+    //     toast.success('ChatGPT has responded!', {
+    //         id: notification,
+    //     });
+    // });
+
+    // const response:any = await askQuestion(input, chatId, model, session);
+
+    if(!prompt){
+        return {answer: "Please provide a prompt!"};
+    }
+
+    if(!chatId){
+        return {answer: "Please provide a valid chat ID!"};
+    }
+    
+    console.log('### before making query');
+    const response = await query(prompt, chatId, model);
+    const resMessage: ResMessage = {
+        text: response || "ChatGPT was unable to find an answer for that!",
+        createdAt: admin.firestore.Timestamp.now(),
+        user: {
+            _id: "ChatGPT",
+            name: "ChatGPT",
+            avatar: ChatGPT,
+        }
+    }
+
+    // const ans:any = response?.answer;
+
+    await adminDb.collection("users").doc(session?.user?.email!).collection("chats").doc(chatId).collection("messages").add(resMessage);
+
+    if(resMessage){
         toast.success('ChatGPT has responded!', {
             id: notification,
         });
-    });
+    }
   };
 
   return (
