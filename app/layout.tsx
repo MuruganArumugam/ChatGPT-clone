@@ -3,8 +3,8 @@ import './globals.css'
 import { SessionProvider } from './../components/SessionProvider';
 import { getServerSession } from 'next-auth';
 import Login from '@/components/Login';
-import { authOptions } from './api/auth/[...nextauth]/route';
 import ClientProvider from '@/components/ClientProvider';
+import { authOptions } from '@/pages/api/auth/[...nextauth]';
 
 export const metadata = {
   title: 'Chat GPT',
